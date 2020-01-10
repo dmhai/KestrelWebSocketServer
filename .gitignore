@@ -1,7 +1,5 @@
 # config #
 ########
-*/bin/*
-*/obj/*
-*/.vs/*
-*/v16/*
-/.vs/KestrelWebSocketServer/v16
+**/bin/*
+**/obj/*
+**/.vs/*

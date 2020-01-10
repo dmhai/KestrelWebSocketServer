@@ -14,6 +14,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Debug;
+using System.Text;
 
 namespace KestrelWebSocketServer
 {
@@ -40,13 +41,15 @@ namespace KestrelWebSocketServer
 
             app.Use(async (context, next) =>
             {
-                var path = Program.configuration.GetValue<string>("ServerOptions:Path");
+                var path = WebSocketServer.Path;
 
                 if (context.Request.Path == path)
                 {
                     if (context.WebSockets.IsWebSocketRequest)
                     {
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
+
+                        WebSocketServer.ConfigAction.OnOpen?.Invoke(context.Connection, webSocket);
                         await Echo(context, webSocket);
                     }
                     else
@@ -65,9 +68,30 @@ namespace KestrelWebSocketServer
         {
             var buffer = new byte[1024 * 4];
             WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+
+            if (result.CloseStatus.HasValue)
+            {
+                WebSocketServer.ConfigAction.OnClose?.Invoke(context.Connection,webSocket);
+            }
+
             while (!result.CloseStatus.HasValue)
             {
-                await webSocket.SendAsync(new ArraySegment<byte>(buffer, 0, result.Count), result.MessageType, result.EndOfMessage, CancellationToken.None);
+                ArraySegment<byte> resultBuffer = new ArraySegment<byte>(buffer, 0, result.Count);
+
+                switch (result.MessageType)
+                {
+                    case WebSocketMessageType.Text:
+                        {
+                            var messageText = Encoding.UTF8.GetString(resultBuffer);
+                            WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
+                        }
+                        break;
+                    case WebSocketMessageType.Binary:
+                        {
+                            WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultBuffer);
+                        }
+                        break;
+                }
 
                 result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
             }
