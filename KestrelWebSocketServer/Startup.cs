@@ -40,7 +40,9 @@ namespace KestrelWebSocketServer
 
             app.Use(async (context, next) =>
             {
-                if (context.Request.Path == "/")
+                var path = Program.configuration.GetValue<string>("ServerOptions:Path");
+
+                if (context.Request.Path == path)
                 {
                     if (context.WebSockets.IsWebSocketRequest)
                     {

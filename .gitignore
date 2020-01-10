@@ -3,3 +3,5 @@
 */bin/*
 */obj/*
 */.vs/*
+*/v16/*
+/.vs/KestrelWebSocketServer/v16
