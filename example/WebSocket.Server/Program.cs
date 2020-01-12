@@ -1,13 +1,17 @@
 ﻿using KestrelWebSocketServer;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.IO;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Net.WebSockets;
 
 namespace WebSocket.Server
 {
     class Program
     {
         public static IConfigurationRoot configuration { get => SettingTool.AddServerOptionsJsonFile(); }
+        public static ConcurrentDictionary<string, System.Net.WebSockets.WebSocket> keyValuePairs = new ConcurrentDictionary<string, System.Net.WebSockets.WebSocket>();
 
         public static async Task Main(string[] args)
         {
@@ -21,25 +25,37 @@ namespace WebSocket.Server
                 config.OnOpen = (connection, websocket) =>
                 {
                     var id = connection.Id;
+                    keyValuePairs.TryAdd(id, websocket);
                     Console.WriteLine($"{id} Opened");
                 };
 
-                config.OnMessage = async(connection, webSocket, msg) =>
+                config.OnMessage = async (connection, webSocket, msg) =>
                 {
                     var id = connection.Id;
                     Console.WriteLine($"Received {id}: {msg}");
-                    await webSocket.SendAsync(msg);
+
+                    if (keyValuePairs.TryGetValue(id, out System.Net.WebSockets.WebSocket value))
+                    {
+                        await value.SendAsync(msg);
+                    }
                 };
 
-                config.OnBinary = (connection, webSocket, file) =>
+                config.OnBinary = async (connection, webSocket, file) =>
                 {
                     var id = connection.Id;
                     Console.WriteLine($"{id} Binary");
+
+                    using (FileStream fileStream = new FileStream("your file path", FileMode.Create))
+                    {
+                        await fileStream.WriteAsync(file);
+                        fileStream.Flush();
+                    }
                 };
 
                 config.OnClose = (connection, webSocket) =>
                 {
                     var id = connection.Id;
+                    keyValuePairs.TryRemove(id, out _);
                     Console.WriteLine($"{id} Closed");
                 };
 
