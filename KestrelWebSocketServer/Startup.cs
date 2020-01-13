@@ -50,7 +50,7 @@ namespace KestrelWebSocketServer
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
                         WebSocketServer.ConfigAction.OnOpen?.Invoke(context.Connection, webSocket);
-                        await Echo(context, webSocket);
+                        await ProcessLine(context, webSocket);
                     }
                     else
                     {
@@ -64,39 +64,42 @@ namespace KestrelWebSocketServer
             });
         }
 
-        private async Task Echo(HttpContext context, WebSocket webSocket)
+        private async Task ProcessLine(HttpContext context, WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+            WebSocketReceiveResult result;
+            while (true)
+            {
+                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                if (result.EndOfMessage)
+                {
+                    break;
+                }
+            }
 
             if (result.CloseStatus.HasValue)
             {
-                WebSocketServer.ConfigAction.OnClose?.Invoke(context.Connection,webSocket);
+                WebSocketServer.ConfigAction.OnClose?.Invoke(context.Connection, webSocket);
+                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
+                return;
             }
 
-            while (!result.CloseStatus.HasValue)
+            var resultArraySegment = new ArraySegment<byte>(buffer, 0, result.Count);
+
+            switch (result.MessageType)
             {
-                ArraySegment<byte> resultBuffer = new ArraySegment<byte>(buffer, 0, result.Count);
-
-                switch (result.MessageType)
-                {
-                    case WebSocketMessageType.Text:
-                        {
-                            var messageText = Encoding.UTF8.GetString(resultBuffer);
-                            WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
-                        }
-                        break;
-                    case WebSocketMessageType.Binary:
-                        {
-                            WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultBuffer);
-                        }
-                        break;
-                }
-
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                case WebSocketMessageType.Text:
+                    {
+                        var messageText = Encoding.UTF8.GetString(resultArraySegment);
+                        WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
+                    }
+                    break;
+                case WebSocketMessageType.Binary:
+                    {
+                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultArraySegment);
+                    }
+                    break;
             }
-
-            await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
         }
 
     }
