@@ -1,14 +1,14 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <ApplicationIcon />
     <OutputType>Library</OutputType>
-    <StartupObject />
     <ServerGarbageCollection>true</ServerGarbageCollection>
+    <!--<ApplicationIcon />
+    <StartupObject />-->
   </PropertyGroup>
 
-  <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
+  <!--<ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>-->
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel.Transport.Libuv" Version="3.1.0" />

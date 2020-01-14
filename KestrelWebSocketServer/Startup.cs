@@ -22,13 +22,13 @@ namespace KestrelWebSocketServer
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddLogging(builder =>
-            {
-                builder.AddConsole()
-                    .AddDebug()
-                    .AddFilter<ConsoleLoggerProvider>(category: null, level: LogLevel.Debug)
-                    .AddFilter<DebugLoggerProvider>(category: null, level: LogLevel.Debug);
-            });
+            //services.AddLogging(builder =>
+            //{
+            //    builder.AddConsole()
+            //        .AddDebug()
+            //        .AddFilter<ConsoleLoggerProvider>(category: null, level: LogLevel.Debug)
+            //        .AddFilter<DebugLoggerProvider>(category: null, level: LogLevel.Debug);
+            //});
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
@@ -50,7 +50,7 @@ namespace KestrelWebSocketServer
                         WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
 
                         WebSocketServer.ConfigAction.OnOpen?.Invoke(context.Connection, webSocket);
-                        await ProcessLine(context, webSocket);
+                        await Process(context, webSocket);
                     }
                     else
                     {
@@ -64,39 +64,44 @@ namespace KestrelWebSocketServer
             });
         }
 
+        private async Task Process(HttpContext context, WebSocket webSocket)
+        {
+            while (!webSocket.CloseStatus.HasValue)
+            {
+                await ProcessLine(context, webSocket);
+            }
+
+            WebSocketServer.ConfigAction.OnClose?.Invoke(context.Connection, webSocket);
+            await webSocket.CloseAsync(webSocket.CloseStatus.Value, webSocket.CloseStatusDescription, CancellationToken.None);
+        }
+
         private async Task ProcessLine(HttpContext context, WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
-            WebSocketReceiveResult result;
+            var resultMemory = new Memory<byte>(buffer);
+            ValueWebSocketReceiveResult result;
             while (true)
             {
-                result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), CancellationToken.None);
+                result = await webSocket.ReceiveAsync(resultMemory, CancellationToken.None);
                 if (result.EndOfMessage)
                 {
                     break;
                 }
             }
 
-            if (result.CloseStatus.HasValue)
-            {
-                WebSocketServer.ConfigAction.OnClose?.Invoke(context.Connection, webSocket);
-                await webSocket.CloseAsync(result.CloseStatus.Value, result.CloseStatusDescription, CancellationToken.None);
-                return;
-            }
-
-            var resultArraySegment = new ArraySegment<byte>(buffer, 0, result.Count);
+            resultMemory = new Memory<byte>(buffer, 0, result.Count);
 
             switch (result.MessageType)
             {
                 case WebSocketMessageType.Text:
                     {
-                        var messageText = Encoding.UTF8.GetString(resultArraySegment);
+                        var messageText = Encoding.UTF8.GetString(resultMemory.Span);
                         WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
                     }
                     break;
                 case WebSocketMessageType.Binary:
                     {
-                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultArraySegment);
+                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultMemory);
                     }
                     break;
             }

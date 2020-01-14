@@ -14,8 +14,13 @@ namespace KestrelWebSocketServer
 
         public static async Task SendAsync(this WebSocket webSocket, string msg)
         {
-            var msgByte = new ArraySegment<byte>(Encoding.UTF8.GetBytes(msg));
+            var msgByte = new Memory<byte>(Encoding.UTF8.GetBytes(msg));
             await webSocket.SendAsync(msgByte, WebSocketMessageType.Text, true, CancellationToken.None);
+        }
+
+        public static async Task CloseAsync(this WebSocket webSocket)
+        {
+            await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
         }
 
     }
