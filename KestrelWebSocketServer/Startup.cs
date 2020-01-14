@@ -64,7 +64,7 @@ namespace KestrelWebSocketServer
             });
         }
 
-        private async Task Process(HttpContext context, WebSocket webSocket)
+        private async ValueTask Process(HttpContext context, WebSocket webSocket)
         {
             while (!webSocket.CloseStatus.HasValue)
             {
@@ -75,14 +75,14 @@ namespace KestrelWebSocketServer
             await webSocket.CloseAsync(webSocket.CloseStatus.Value, webSocket.CloseStatusDescription, CancellationToken.None);
         }
 
-        private async Task ProcessLine(HttpContext context, WebSocket webSocket)
+        private async ValueTask ProcessLine(HttpContext context, WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
             var resultMemory = new Memory<byte>(buffer);
             ValueWebSocketReceiveResult result;
             while (true)
             {
-                result = await webSocket.ReceiveAsync(resultMemory, CancellationToken.None);
+                result = await webSocket.ReceiveAsync(resultMemory, CancellationToken.None).ConfigureAwait(false);
                 if (result.EndOfMessage)
                 {
                     break;

@@ -12,13 +12,13 @@ namespace KestrelWebSocketServer
     public static class WebSocketExtensions
     {
 
-        public static async Task SendAsync(this WebSocket webSocket, string msg)
+        public static async ValueTask SendAsync(this WebSocket webSocket, string msg)
         {
             var msgByte = new Memory<byte>(Encoding.UTF8.GetBytes(msg));
             await webSocket.SendAsync(msgByte, WebSocketMessageType.Text, true, CancellationToken.None);
         }
 
-        public static async Task CloseAsync(this WebSocket webSocket)
+        public static async ValueTask CloseAsync(this WebSocket webSocket)
         {
             await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, webSocket.CloseStatusDescription, CancellationToken.None);
         }
