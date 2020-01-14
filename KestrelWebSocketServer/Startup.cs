@@ -15,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Debug;
 using System.Text;
+using System.Buffers;
 
 namespace KestrelWebSocketServer
 {
@@ -78,30 +79,31 @@ namespace KestrelWebSocketServer
         private async ValueTask ProcessLine(HttpContext context, WebSocket webSocket)
         {
             var buffer = new byte[1024 * 4];
-            var resultMemory = new Memory<byte>(buffer);
             ValueWebSocketReceiveResult result;
+            List<byte> _allByte = new List<byte>();
+
             while (true)
             {
-                result = await webSocket.ReceiveAsync(resultMemory, CancellationToken.None).ConfigureAwait(false);
+                result = await webSocket.ReceiveAsync(new Memory<byte>(buffer), CancellationToken.None).ConfigureAwait(false);
+                _allByte.AddRange(new ArraySegment<byte>(buffer, 0, result.Count));
                 if (result.EndOfMessage)
                 {
                     break;
                 }
             }
 
-            resultMemory = new Memory<byte>(buffer, 0, result.Count);
-
+            var resultByte = _allByte.ToArray();
             switch (result.MessageType)
             {
                 case WebSocketMessageType.Text:
                     {
-                        var messageText = Encoding.UTF8.GetString(resultMemory.Span);
+                        var messageText = Encoding.UTF8.GetString(resultByte);
                         WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
                     }
                     break;
                 case WebSocketMessageType.Binary:
                     {
-                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultMemory);
+                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultByte);
                     }
                     break;
             }
