@@ -16,12 +16,12 @@ using Microsoft.Extensions.Logging.Console;
 using Microsoft.Extensions.Logging.Debug;
 using System.Text;
 using System.Buffers;
+using System.Runtime.InteropServices;
 
 namespace KestrelWebSocketServer
 {
     public class ProcessHandler
     {
-        public static ManageBytePool<byte> bytePool = new ManageBytePool<byte>(WebSocketServer.ReceiveBufferSize, 10);
         public int ReceiveBufferSize { get => WebSocketServer.ReceiveBufferSize; } //4*1024 4kb 
 
         public void ConfigureServices(IServiceCollection services)
@@ -103,7 +103,7 @@ namespace KestrelWebSocketServer
 
         private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullTextAsync(WebSocket webSocket)
         {
-            var buffer = bytePool.Pool.Rent(ReceiveBufferSize);
+            var buffer = ArrayPool<byte>.Shared.Rent(ReceiveBufferSize);
             ValueWebSocketReceiveResult result;
             var resulyMemory = new Memory<byte>(buffer);
 
@@ -117,13 +117,13 @@ namespace KestrelWebSocketServer
             }
 
             resulyMemory = resulyMemory.Slice(0, result.Count);
-            bytePool.Pool.Return(buffer);
+            ArrayPool<byte>.Shared.Return(buffer);
             return (result, resulyMemory.ToArray());
         }
 
         private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullFileAsync(WebSocket webSocket)
         {
-            var buffer = bytePool.Pool.Rent(ReceiveBufferSize);
+            var buffer = ArrayPool<byte>.Shared.Rent(ReceiveBufferSize);
             ValueWebSocketReceiveResult result;
             List<byte> allByte = new List<byte>();
             var resultMemory = new Memory<byte>(buffer);
@@ -134,7 +134,7 @@ namespace KestrelWebSocketServer
                 allByte.AddRange(resultMemory.Slice(0, result.Count).ToArray());
                 if (result.EndOfMessage)
                 {
-                    bytePool.Pool.Return(buffer);
+                    ArrayPool<byte>.Shared.Return(buffer);
                     break;
                 }
             }
