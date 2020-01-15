@@ -21,6 +21,8 @@ namespace KestrelWebSocketServer
 {
     public class Startup
     {
+        public static ManageBytePool<byte> bytePool = new ManageBytePool<byte>(4096, 100);
+
         public void ConfigureServices(IServiceCollection services)
         {
             //services.AddLogging(builder =>
@@ -78,21 +80,23 @@ namespace KestrelWebSocketServer
 
         private async ValueTask ProcessLine(HttpContext context, WebSocket webSocket)
         {
-            var buffer = new byte[1024 * 4];
+            //var buffer = new byte[1024 * 4];
+            var buffer = bytePool.Pool.Rent(4096);
             ValueWebSocketReceiveResult result;
-            List<byte> _allByte = new List<byte>();
+            List<byte> allByte = new List<byte>();
 
             while (true)
             {
                 result = await webSocket.ReceiveAsync(new Memory<byte>(buffer), CancellationToken.None).ConfigureAwait(false);
-                _allByte.AddRange(new ArraySegment<byte>(buffer, 0, result.Count));
+                allByte.AddRange(new ArraySegment<byte>(buffer, 0, result.Count));
                 if (result.EndOfMessage)
                 {
+                    bytePool.Pool.Return(buffer);
                     break;
                 }
             }
 
-            var resultByte = _allByte.ToArray();
+            var resultByte = allByte.ToArray();
             switch (result.MessageType)
             {
                 case WebSocketMessageType.Text:

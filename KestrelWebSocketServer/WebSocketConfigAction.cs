@@ -13,7 +13,7 @@ namespace KestrelWebSocketServer
 
         public Action<ConnectionInfo, WebSocket, string> OnMessage { get; set; }
 
-        public Action<ConnectionInfo, WebSocket, Memory<byte>> OnBinary { get; set; }
+        public Action<ConnectionInfo, WebSocket, ReadOnlyMemory<byte>> OnBinary { get; set; }
 
         public Action<ConnectionInfo, WebSocket> OnClose { get; set; }
 
