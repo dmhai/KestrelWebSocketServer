@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 
 namespace KestrelWebSocketServer
 {
-    public class ProcessHandler
+    public class Startup
     {
         public int ReceiveBufferSize { get => WebSocketServer.ReceiveBufferSize; } //4*1024 4kb 
 

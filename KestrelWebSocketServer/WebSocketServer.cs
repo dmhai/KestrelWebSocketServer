@@ -32,7 +32,7 @@ namespace KestrelWebSocketServer
                       {
                           webBuilder.UseKestrel();
                           webBuilder.UseUrls(new string[] { $@"http://{ip}:{port}/" });
-                          webBuilder.UseStartup<ProcessHandler>();
+                          webBuilder.UseStartup<Startup>();
                       })
                       .Build()
                       .RunAsync();
