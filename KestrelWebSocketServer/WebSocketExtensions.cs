@@ -11,7 +11,6 @@ namespace KestrelWebSocketServer
 {
     public static class WebSocketExtensions
     {
-
         public static async ValueTask SendAsync(this WebSocket webSocket, string msg)
         {
             var msgByte = new Memory<byte>(Encoding.UTF8.GetBytes(msg));
