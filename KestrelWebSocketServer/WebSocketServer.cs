@@ -13,7 +13,7 @@ namespace KestrelWebSocketServer
 
         public static WebSocketConfigAction ConfigAction { get; set; }
 
-        public static int ReceiveBufferSize { get; set; } = 4092;  //4*1024 4kb
+        public static int ReceiveBufferSize { get; set; } = 4096;
 
         public static bool EnabledLargeFileReceive { get; set; } = false;
 
@@ -31,7 +31,6 @@ namespace KestrelWebSocketServer
                       .ConfigureWebHostDefaults(webBuilder =>
                       {
                           webBuilder.UseKestrel();
-                          webBuilder.UseLibuv();
                           webBuilder.UseUrls(new string[] { $@"http://{ip}:{port}/" });
                           webBuilder.UseStartup<ProcessHandler>();
                       })

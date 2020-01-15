@@ -126,12 +126,11 @@ namespace KestrelWebSocketServer
             var buffer = ArrayPool<byte>.Shared.Rent(ReceiveBufferSize);
             ValueWebSocketReceiveResult result;
             List<byte> allByte = new List<byte>();
-            var resultMemory = new Memory<byte>(buffer);
 
             while (true)
             {
-                result = await webSocket.ReceiveAsync(resultMemory, CancellationToken.None).ConfigureAwait(false);
-                allByte.AddRange(resultMemory.Slice(0, result.Count).ToArray());
+                result = await webSocket.ReceiveAsync(new Memory<byte>(buffer), CancellationToken.None).ConfigureAwait(false);
+                allByte.AddRange(new ArraySegment<byte>(buffer, 0, result.Count));
                 if (result.EndOfMessage)
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
