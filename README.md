@@ -1,2 +1,2 @@
 # KestrelWebSocketServer
-a kestrel websocket example
+a kestrel websocket server example
