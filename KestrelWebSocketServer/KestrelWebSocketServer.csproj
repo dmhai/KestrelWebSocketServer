@@ -4,11 +4,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <OutputType>Library</OutputType>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <!--<ApplicationIcon />
-    <StartupObject />-->
   </PropertyGroup>
-
-  <!--<ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>-->
 
   <ItemGroup>
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.7.0" />
