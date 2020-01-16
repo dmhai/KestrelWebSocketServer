@@ -82,7 +82,7 @@ namespace KestrelWebSocketServer
 
         private async ValueTask ProcessLine(HttpContext context, WebSocket webSocket)
         {
-            var values = !WebSocketServer.EnabledLargeFileReceive ? await ReceiveFullTextAsync(webSocket) : await ReceiveFullFileAsync(webSocket);
+            var values = await ReceiveFullMsgAsync(webSocket);
             var result = values.Item1;
             var resultByte = values.Item2;
             switch (result.MessageType)
@@ -101,32 +101,7 @@ namespace KestrelWebSocketServer
             }
         }
 
-        private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullTextAsync(WebSocket webSocket)
-        {
-            using (var pool = new BufferArrayPool(ReceiveBufferSize))
-            {
-                var buffer = pool.Buffer;
-                ValueWebSocketReceiveResult result;
-                using (var memoryPool = MemoryPool<byte>.Shared.Rent(buffer.Length))
-                {
-                    var resulyMemory = memoryPool.Memory;
-
-                    while (true)
-                    {
-                        result = await webSocket.ReceiveAsync(resulyMemory, CancellationToken.None).ConfigureAwait(false);
-                        if (result.EndOfMessage)
-                        {
-                            break;
-                        }
-                    }
-
-                    resulyMemory = resulyMemory.Slice(0, result.Count);
-                    return (result, resulyMemory.ToArray());
-                }
-            }
-        }
-
-        private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullFileAsync(WebSocket webSocket)
+        private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullMsgAsync(WebSocket webSocket)
         {
             using (var pool = new BufferArrayPool(ReceiveBufferSize))
             {

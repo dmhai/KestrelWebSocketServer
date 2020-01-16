@@ -20,7 +20,6 @@ namespace WebSocket.Server
             var path = configuration.GetValue<string>("ServerOptions:Path");
             var server = new WebSocketServer();
 
-            WebSocketServer.EnabledLargeFileReceive = false;   // you want to receive large file, you have to set true
             WebSocketServer.ReceiveBufferSize = 4 * 1024;     //4kb
 
             await server.BuildAsync(ip, port, path, config =>

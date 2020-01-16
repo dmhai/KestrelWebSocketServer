@@ -15,8 +15,6 @@ namespace KestrelWebSocketServer
 
         public static int ReceiveBufferSize { get; set; } = 4096;
 
-        public static bool EnabledLargeFileReceive { get; set; } = false;
-
         public async Task BuildAsync(string ip, int port, string path, Action<WebSocketConfigAction> action)
         {
             if (action == null)
