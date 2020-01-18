@@ -84,24 +84,24 @@ namespace KestrelWebSocketServer
         {
             var values = await ReceiveFullMsgAsync(webSocket);
             var result = values.Item1;
-            var resultByte = values.Item2;
+            var valueMemory = values.Item2;
             switch (result.MessageType)
             {
                 case WebSocketMessageType.Text:
                     {
-                        var messageText = Encoding.UTF8.GetString(resultByte);
+                        var messageText = Encoding.UTF8.GetString(valueMemory.Span);
                         WebSocketServer.ConfigAction.OnMessage?.Invoke(context.Connection, webSocket, messageText);
                     }
                     break;
                 case WebSocketMessageType.Binary:
                     {
-                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, resultByte);
+                        WebSocketServer.ConfigAction.OnBinary?.Invoke(context.Connection, webSocket, valueMemory);
                     }
                     break;
             }
         }
 
-        private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, byte[]>> ReceiveFullMsgAsync(WebSocket webSocket)
+        private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, ReadOnlyMemory<byte>>> ReceiveFullMsgAsync(WebSocket webSocket)
         {
             using (var pool = new BufferArrayPool(ReceiveBufferSize))
             {
