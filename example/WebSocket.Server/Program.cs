@@ -64,6 +64,7 @@ namespace WebSocket.Server
             });
 
             Console.ReadLine();
+            await server.CloseAsync();
         }
 
     }

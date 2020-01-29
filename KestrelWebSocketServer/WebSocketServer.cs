@@ -15,7 +15,9 @@ namespace KestrelWebSocketServer
 
         public static int ReceiveBufferSize { get; set; } = 4096;
 
-        public async Task BuildAsync(string ip, int port, string path, Action<WebSocketConfigAction> action)
+        private IHost WebHost { get; set; }
+
+        public async ValueTask BuildAsync(string ip, int port, string path, Action<WebSocketConfigAction> action)
         {
             if (action == null)
             {
@@ -25,15 +27,29 @@ namespace KestrelWebSocketServer
             Path = path;
             ConfigAction = new WebSocketConfigAction();
             action.Invoke(ConfigAction);
-            await Host.CreateDefaultBuilder()
-                      .ConfigureWebHostDefaults(webBuilder =>
-                      {
-                          webBuilder.UseKestrel();
-                          webBuilder.UseUrls(new string[] { $@"http://{ip}:{port}/" });
-                          webBuilder.UseStartup<Startup>();
-                      })
-                      .Build()
-                      .RunAsync();
+            CreateHost(ip, port, path);
+            await WebHost.RunAsync();
+        }
+
+        private void CreateHost(string ip, int port, string path)
+        {
+            WebHost = Host.CreateDefaultBuilder()
+                           .ConfigureWebHostDefaults(webBuilder =>
+                           {
+                               webBuilder.UseKestrel();
+                               webBuilder.UseUrls(new string[] { $@"http://{ip}:{port}/" });
+                               webBuilder.UseStartup<Startup>();
+                           })
+                           .Build();
+        }
+
+        public async ValueTask CloseAsync()
+        {
+            if (WebHost != null)
+            {
+                Startup.BytePool.Dispose();
+                await WebHost.StopAsync();
+            }
         }
 
     }
