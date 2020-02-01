@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KestrelWebSocketServer
 {
-    public class WebSocketServer
+    public class WebSocketServer:IDisposable
     {
         public static string Path { get; set; } = "/";
 
@@ -43,12 +43,11 @@ namespace KestrelWebSocketServer
                            .Build();
         }
 
-        public async ValueTask CloseAsync()
+        public void Dispose()
         {
             if (WebHost != null)
             {
-                Startup.BytePool.Dispose();
-                await WebHost.StopAsync();
+                WebHost.Dispose();
             }
         }
 

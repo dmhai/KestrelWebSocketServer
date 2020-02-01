@@ -24,7 +24,7 @@ namespace KestrelWebSocketServer
     {
         public int ReceiveBufferSize { get => WebSocketServer.ReceiveBufferSize; } //4*1024 4kb 
 
-        public static MemoryBytePool BytePool = new MemoryBytePool();
+        public MemoryBytePool BytePool = new MemoryBytePool();
 
         public void ConfigureServices(IServiceCollection services)
         {
@@ -103,53 +103,35 @@ namespace KestrelWebSocketServer
             }
         }
 
-        #region  arraypool
-        //private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, ReadOnlyMemory<byte>>> ReceiveFullMsgAsync(WebSocket webSocket)
-        //{
-        //    using (var pool = new BufferArrayPool(ReceiveBufferSize))
-        //    {
-        //        var buffer = pool.Buffer;
-        //        ValueWebSocketReceiveResult result;
-        //        List<byte> allByte = new List<byte>();
-
-        //        while (true)
-        //        {
-        //            result = await webSocket.ReceiveAsync(new Memory<byte>(buffer), CancellationToken.None).ConfigureAwait(false);
-        //            allByte.AddRange(new ArraySegment<byte>(buffer, 0, result.Count));
-        //            if (result.EndOfMessage)
-        //            {
-        //                break;
-        //            }
-        //        }
-
-        //        return (result, allByte.ToArray());
-        //    }
-        //}
-        #endregion
-
-        #region  memorypool
         private async ValueTask<ValueTuple<ValueWebSocketReceiveResult, ReadOnlyMemory<byte>>> ReceiveFullMsgAsync(WebSocket webSocket)
         {
             using (var poolMemory = BytePool.GetBuffer(ReceiveBufferSize))
             {
                 var buffer = poolMemory.Memory;
-                ValueWebSocketReceiveResult result;
-                List<byte> allByte = new List<byte>();
+                var result = await webSocket.ReceiveAsync(buffer, CancellationToken.None).ConfigureAwait(false);
 
-                while (true)
+                if (result.EndOfMessage)
                 {
-                    result = await webSocket.ReceiveAsync(buffer, CancellationToken.None).ConfigureAwait(false);
-                    allByte.AddRange(buffer.Slice(0, result.Count).ToArray());
-                    if (result.EndOfMessage)
-                    {
-                        break;
-                    }
+                    return (result, buffer.Slice(0, result.Count));
                 }
+                else
+                {
+                    List<byte> allByte = new List<byte>();
+                    allByte.AddRange(buffer.Span.Slice(0, result.Count).ToArray());
+                    while (true)
+                    {
+                        result = await webSocket.ReceiveAsync(buffer, CancellationToken.None).ConfigureAwait(false);
+                        allByte.AddRange(buffer.Span.Slice(0, result.Count).ToArray());
+                        if (result.EndOfMessage)
+                        {
+                            break;
+                        }
+                    }
 
-                return (result, allByte.ToArray());
+                    return (result, allByte.ToArray());
+                }
             }
         }
-        #endregion
 
     }
 }

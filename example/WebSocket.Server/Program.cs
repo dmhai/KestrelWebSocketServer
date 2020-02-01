@@ -13,7 +13,7 @@ namespace WebSocket.Server
         public static IConfigurationRoot configuration { get => SettingTool.AddServerOptionsJsonFile(); }
         public static ConcurrentDictionary<string, System.Net.WebSockets.WebSocket> keyValuePairs = new ConcurrentDictionary<string, System.Net.WebSockets.WebSocket>();
 
-        public static async Task Main(string[] args)
+        public static async ValueTask Main(string[] args)
         {
             var ip = configuration.GetValue<string>("ServerOptions:IP");
             var port = configuration.GetValue<int>("ServerOptions:Port");
@@ -64,7 +64,7 @@ namespace WebSocket.Server
             });
 
             Console.ReadLine();
-            await server.CloseAsync();
+            server.Dispose();
         }
 
     }
